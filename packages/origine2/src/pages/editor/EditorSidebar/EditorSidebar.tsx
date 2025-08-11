@@ -98,12 +98,15 @@ export default function EditorSideBar() {
     };
   }, []);
 
-  const refreshGame = () => (ifRef?.current as unknown as HTMLIFrameElement).contentWindow?.location.reload();
+  const refreshGame = (e?: { shouldRefresh: boolean }) => {
+    const { shouldRefresh = true } = e || {};
+    if (shouldRefresh) (ifRef?.current as unknown as HTMLIFrameElement).contentWindow?.location.reload();
+  };
 
   useEffect(() => {
-    eventBus.on('refGame', refreshGame);
+    eventBus.on('iframe:refresh-game', refreshGame);
     return () => {
-      eventBus.off('refGame', refreshGame);
+      eventBus.off('iframe:refresh-game', refreshGame);
     };
   }, []);
 
@@ -166,7 +169,7 @@ export default function EditorSideBar() {
               appearance="subtle"
               icon={<ArrowClockwiseIcon />}
               title={t`刷新`}
-              onClick={refreshGame}
+              onClick={() => refreshGame()}
             />
             <Button
               appearance="subtle"
