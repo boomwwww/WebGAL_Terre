@@ -19,12 +19,15 @@ import {PlugConnected20Regular, Settings20Regular, Textbox20Regular, TextboxChec
 import { createId } from '@/utils/createId';
 import { AppSettingsButton } from '@/components/AppSettings/AppSettingsDialog';
 import { EditorPreviewClient } from '@/utils/editorPreviewClient';
+import MultiSplitPane from '@/components/MultiSplitPane/MultiSplitPane';
 
 export default function TemplateEditorSidebar() {
   const templateDir = useEditorStore.use.subPage();
   const sidebarWidth = useTemplateEditorContext((state) => state.sidebarWidth);
   const templateActionsHeight = useTemplateEditorContext((state) => state.templateActionsHeight);
   const componentTreeHeight = useTemplateEditorContext((state) => state.componentTreeHeight);
+  const updateTemplateActionsHeight = useTemplateEditorContext((state) => state.updateTemplateActionsHeight);
+  const updateComponentTreeHeight = useTemplateEditorContext((state) => state.updateComponentTreeHeight);
 
   const tabs = useTemplateEditorContext((state) => state.tabs);
   const updateTabs = useTemplateEditorContext((state) => state.updateTabs);
@@ -69,26 +72,36 @@ export default function TemplateEditorSidebar() {
           {templateConfig ? templateConfig.name : templateDir}
         </span>
       </div>
-      <div className={styles.actionsBlock} style={{height: `${templateActionsHeight}px`}}>
-        <TemplateActions
-          templateConfig={templateConfig}
-          onTemplateConfigUpdated={async () => {
-            await mutateTemplateConfig();
+      <div className={styles.multiWrap}>
+        <MultiSplitPane
+          direction="vertical"
+          sizes={[templateActionsHeight, componentTreeHeight, 'flex']}
+          minSizes={[42, 0]}
+          onSizesChange={([a, b]) => {
+            updateTemplateActionsHeight(a);
+            updateComponentTreeHeight(b);
           }}
-        />
-      </div>
-      <TemplateActionsReSizer/>
-      <div className={styles.componentTree} style={{height: `${componentTreeHeight}px`}}>
-        <ComponentTree/>
-      </div>
-      <ComponentTreeReSizer/>
-      <div className={styles.assets}>
-        <CommonTips style={{margin:4}} text={t`提示：样式中用到的资源放在 assets 目录下`}/>
-        <Assets
-          rootPath={['templates', templateDir]}
-          // isProtected
-          fileFunction={{open: handleOpen}}
-        />
+        >
+          <div className={styles.actionsBlock}>
+            <TemplateActions
+              templateConfig={templateConfig}
+              onTemplateConfigUpdated={async () => {
+                await mutateTemplateConfig();
+              }}
+            />
+          </div>
+          <div className={styles.componentTree}>
+            <ComponentTree/>
+          </div>
+          <div className={styles.assets}>
+            <CommonTips style={{margin:4}} text={t`提示：样式中用到的资源放在 assets 目录下`}/>
+            <Assets
+              rootPath={['templates', templateDir]}
+              // isProtected
+              fileFunction={{open: handleOpen}}
+            />
+          </div>
+        </MultiSplitPane>
       </div>
     </div>
   );
@@ -240,97 +253,3 @@ const TemplateActions = ({ templateConfig, onTemplateConfigUpdated }: TemplateAc
   );
 };
 
-function TemplateActionsReSizer() {
-  const templateActionsHeight = useTemplateEditorContext((state) => state.templateActionsHeight);
-  const updateTemplateActionsHeight = useTemplateEditorContext((state) => state.updateTemplateActionsHeight);
-
-  return (
-    <SidebarBlockResizer
-      height={templateActionsHeight}
-      minHeight={42}
-      onResize={updateTemplateActionsHeight}
-    />
-  );
-}
-
-function ComponentTreeReSizer() {
-  const componentTreeHeight = useTemplateEditorContext((state) => state.componentTreeHeight);
-  const updateComponentTreeHeight = useTemplateEditorContext((state) => state.updateComponentTreeHeight);
-
-  return (
-    <SidebarBlockResizer
-      height={componentTreeHeight}
-      minHeight={0}
-      onResize={updateComponentTreeHeight}
-    />
-  );
-}
-
-interface SidebarBlockResizerProps {
-  height: number;
-  minHeight: number;
-  onResize: (height: number) => void;
-}
-
-function SidebarBlockResizer({height, minHeight, onResize}: SidebarBlockResizerProps) {
-  const [isDragging, setIsDragging] = useState(false);
-  const lastYRef = useRef(0);
-  const heightRef = useRef(height);
-
-  useEffect(() => {
-    if (!isDragging) {
-      heightRef.current = height;
-    }
-  }, [height, isDragging]);
-
-  const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    heightRef.current = height;
-    lastYRef.current = event.clientY;
-    setIsDragging(true);
-  };
-
-  useEffect(
-    () => {
-      if (!isDragging) return;
-
-      const previousCursor = document.body.style.cursor;
-      const previousUserSelect = document.body.style.userSelect;
-      document.body.style.cursor = 'ns-resize';
-      document.body.style.userSelect = 'none';
-
-      const moveHandler = (event: MouseEvent) => {
-        if (!isDragging) return;
-        event.preventDefault();
-        const deltaY = event.clientY - lastYRef.current;
-        const newHeight = Math.max(minHeight, heightRef.current + deltaY);
-        heightRef.current = newHeight;
-        lastYRef.current = event.clientY;
-        onResize(newHeight);
-      };
-
-      const upHandler = () => {
-        setIsDragging(false);
-      };
-
-      document.addEventListener("mousemove", moveHandler);
-      document.addEventListener("mouseup", upHandler);
-
-      return () => {
-        document.body.style.cursor = previousCursor;
-        document.body.style.userSelect = previousUserSelect;
-        document.removeEventListener("mousemove", moveHandler);
-        document.removeEventListener("mouseup", upHandler);
-      };
-    },
-    [isDragging, minHeight, onResize]
-  );
-
-  return (
-    <div
-      className={`${styles.divider} ${isDragging ? styles.dividerActive : ''}`}
-      onMouseDown={handleMouseDown}>
-      <div className={styles.dividerLine}/>
-    </div>
-  );
-}

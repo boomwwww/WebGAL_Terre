@@ -13,7 +13,6 @@ export interface ITemplateEditorState {
   sidebarWidth: number,
   templateActionsHeight: number,
   componentTreeHeight: number,
-  previewHeight: number,
 }
 
 export interface ITemplateEditorAction {
@@ -25,5 +24,4 @@ export interface ITemplateEditorAction {
   updateSidebarWidth: (sidebarWidth: ITemplateEditorState['sidebarWidth']) => void,
   updateTemplateActionsHeight: (templateActionsHeight: ITemplateEditorState['templateActionsHeight']) => void,
   updateComponentTreeHeight: (componentTreeheight: ITemplateEditorState['componentTreeHeight']) => void,
-  updatePreviewHeight: (previewHeight: ITemplateEditorState['previewHeight']) => void,
 }

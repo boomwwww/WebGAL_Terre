@@ -12,7 +12,6 @@ const initState: ITemplateEditorState = {
   sidebarWidth: 280,
   templateActionsHeight: 148,
   componentTreeHeight: 400,
-  previewHeight: 280,
 };
 
 export const createTemplateEditorStore = (templateName: string) =>
@@ -28,7 +27,6 @@ export const createTemplateEditorStore = (templateName: string) =>
         updateSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
         updateTemplateActionsHeight: (templateActionsHeight) => set({ templateActionsHeight }),
         updateComponentTreeHeight: (componentTreeHeight) => set({ componentTreeHeight }),
-        updatePreviewHeight: (previewHeight) => set({ previewHeight }),
       }),
       {
         name: `template-editor-storage-${templateName}`,

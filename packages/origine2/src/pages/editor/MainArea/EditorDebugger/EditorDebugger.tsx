@@ -2,7 +2,7 @@ import s from './editorDebugger.module.scss';
 import {useValue} from "@/hooks/useValue";
 import JsonView from '@uiw/react-json-view';
 import {githubLightTheme} from "@/pages/editor/MainArea/EditorDebugger/theme";
-import {ReactNode, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent} from "react";
+import {ReactNode, useEffect, useMemo} from "react";
 import {eventBus} from "@/utils/eventBus";
 import {Terminal} from 'primereact/terminal';
 import {TerminalService} from 'primereact/terminalservice';
@@ -13,15 +13,8 @@ import {createId} from "@/utils/createId";
 import type {IDebugVariable} from "@/types/editor";
 import {t} from "@lingui/macro";
 
-const DEFAULT_DEBUGGER_HEIGHT = 220;
-const MIN_DEBUGGER_HEIGHT = 96;
-
 export default function EditorDebugger() {
   const mode = useValue<'state' | 'console' | 'variables'>('console');
-  const [debuggerHeight, setDebuggerHeight] = useState(DEFAULT_DEBUGGER_HEIGHT);
-  const [isDragging, setIsDragging] = useState(false);
-  const lastYRef = useRef(0);
-  const heightRef = useRef(debuggerHeight);
 
   const editorValue = useValue<object>(EditorPreviewClient.getLastStageSnapshot()?.stageState ?? {});
   const debugVariables = useEditorStore.use.debugVariables();
@@ -53,47 +46,6 @@ export default function EditorDebugger() {
       TerminalService.off('command', commandHandler);
     };
   }, []);
-
-  useEffect(() => {
-    if (!isDragging) heightRef.current = debuggerHeight;
-  }, [debuggerHeight, isDragging]);
-
-  const handleResizeMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    heightRef.current = debuggerHeight;
-    lastYRef.current = event.clientY;
-    setIsDragging(true);
-  };
-
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const previousCursor = document.body.style.cursor;
-    const previousUserSelect = document.body.style.userSelect;
-    document.body.style.cursor = 'ns-resize';
-    document.body.style.userSelect = 'none';
-
-    const moveHandler = (event: MouseEvent) => {
-      event.preventDefault();
-      const deltaY = event.clientY - lastYRef.current;
-      const newHeight = Math.max(MIN_DEBUGGER_HEIGHT, heightRef.current - deltaY);
-      heightRef.current = newHeight;
-      lastYRef.current = event.clientY;
-      setDebuggerHeight(newHeight);
-    };
-
-    const upHandler = () => setIsDragging(false);
-
-    document.addEventListener("mousemove", moveHandler);
-    document.addEventListener("mouseup", upHandler);
-
-    return () => {
-      document.body.style.cursor = previousCursor;
-      document.body.style.userSelect = previousUserSelect;
-      document.removeEventListener("mousemove", moveHandler);
-      document.removeEventListener("mouseup", upHandler);
-    };
-  }, [isDragging]);
 
   const stateEditor = <div>
     <JsonView style={{...githubLightTheme, overflow: 'auto',fontFamily:'"JetBrains Mono", monospace'}} value={editorValue.value}/>
@@ -168,12 +120,7 @@ export default function EditorDebugger() {
   </div>;
 
   const showComp = mode.value === 'state' ? stateEditor : mode.value === 'variables' ? variablesEditor : webgalConsole;
-  return <div className={s.main} style={{ height: `${debuggerHeight}px` }}>
-    <div
-      className={`${s.resizeHandle} ${isDragging ? s.resizeHandleActive : ''}`}
-      onMouseDown={handleResizeMouseDown}>
-      <div className={s.resizeHandleLine}/>
-    </div>
+  return <div className={s.main}>
     <div className={s.debuggerChecker}>
       <DebuggerCheckButton isChecked={mode.value === 'console'} onClick={() => mode.set('console')}>
         Console
